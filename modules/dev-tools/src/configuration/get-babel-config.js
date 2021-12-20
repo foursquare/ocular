@@ -16,6 +16,7 @@ const COMMON_PRESETS = [
 ];
 
 const COMMON_PLUGINS = [
+  '@babel/plugin-transform-typescript',
   // webpack 4 cannot parse the most recent JS syntax
   '@babel/plugin-proposal-optional-chaining',
   '@babel/plugin-proposal-nullish-coalescing-operator',
