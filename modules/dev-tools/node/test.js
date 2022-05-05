@@ -7,14 +7,9 @@ const {resolve} = require('path');
 const moduleAlias = require('module-alias');
 
 const {getOcularConfig} = require('../src/helpers/get-ocular-config');
-
-// Browser test is opt-in by installing @probe.gl/test-utils
-let BrowserTestDriver = null;
-try {
-  BrowserTestDriver = require('@probe.gl/test-utils').BrowserTestDriver;
-} catch (error) {
-  BrowserTestDriver = null;
-}
+const {
+  default: BrowserTestDriver
+} = require('../src/test-utils/browser-automation/browser-test-driver');
 
 const ocularConfig = getOcularConfig();
 
@@ -96,11 +91,6 @@ function resolveEntry(key) {
 }
 
 function runBrowserTest(opts) {
-  if (BrowserTestDriver === null) {
-    console.log('@probe.gl/test-utils is not installed, skipping browser test');
-    // console.log('\033[93m@probe.gl/test-utils is not installed, skipping browser test\033[0m');
-    process.exit(0);
-  }
   const userConfig = ocularConfig.browserTest || {};
   const options = Object.assign({}, opts, userConfig, {
     server: Object.assign({}, opts.server, userConfig.server),

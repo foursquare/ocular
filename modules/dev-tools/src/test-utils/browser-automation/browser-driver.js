@@ -1,0 +1,162 @@
+// probe.gl, MIT license
+
+const puppeteer = require('puppeteer');
+const esbuild = require('esbuild');
+
+const {COLOR, Log} = require('@probe.gl/log');
+const {getAvailablePort} = require('../utils/process-utils');
+
+const DEFAULT_SERVER_CONFIG = {
+  command: 'webpack-dev-server',
+  arguments: [],
+  port: 'auto',
+  wait: 2000,
+  options: {maxBuffer: 5000 * 1024}
+};
+
+// https://github.com/GoogleChrome/puppeteer/blob/v1.11.0/docs/api.md#puppeteerlaunchoptions
+const DEFAULT_PUPPETEER_OPTIONS = {
+  headless: false,
+  defaultViewport: {width: 800, height: 600}
+};
+
+const AUTO_PORT_START = 5000;
+
+function noop() {} // eslint-disable-line @typescript-eslint/no-empty-function
+
+module.exports = class BrowserDriver {
+  constructor(options) {
+    const {id = 'browser-driver'} = options || {};
+    this.id = id;
+    this.logger = new Log({id});
+
+    this.server = null;
+    this.port = null;
+    this.browser = null;
+    this.page = null;
+  }
+
+  async startBrowser(options) {
+    options = Object.assign({}, DEFAULT_PUPPETEER_OPTIONS, options);
+    if (this.browser) {
+      return;
+    }
+    this.browser = await puppeteer.launch(options);
+    console.log(await this.browser.version()); // eslint-disable-line
+  }
+
+  async openPage(options) {
+    const {
+      url = 'http://localhost',
+      exposeFunctions = {},
+      onLoad = noop,
+      onConsole = noop,
+      onError = noop
+    } = options || {};
+
+    if (!this.browser) {
+      throw new Error('No browser instance is found. Forgot to call startBrowser()?');
+    }
+
+    this.page = await this.browser.newPage();
+
+    // https://ourcodeworld.com/articles/read/1106/how-to-solve-puppeteer-timeouterror-navigation-timeout-of-30000-ms-exceeded
+    this.page.setDefaultNavigationTimeout(0);
+
+    // attach events
+    this.page.on('load', onLoad);
+    this.page.on('console', onConsole);
+    this.page.on('error', onError);
+
+    const promises = [];
+    for (const name in exposeFunctions) {
+      promises.push(this.page.exposeFunction(name, exposeFunctions[name]));
+    }
+    await Promise.all(promises);
+
+    await this.page.goto(url);
+  }
+
+  async stopBrowser() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
+  }
+
+  /** Starts a web server with the provided configs.
+   * Resolves to the bound url if successful
+   */
+  async startServer(config) {
+    config = normalizeServerConfig(config, this.logger);
+
+    const port = config.port === 'auto' ? await getAvailablePort(AUTO_PORT_START) : config.port;
+
+    const args = [...config.arguments];
+    if (port) {
+      args.push('--port', port);
+    }
+
+    const server = await esbuild.serve({port}, {entryPoints: [], bundle: true});
+
+    this.server = server;
+    this.port = port;
+
+    server.wait.then(() => {
+      this.server = null;
+    });
+
+    return await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const url = `http://localhost:${this.port}`;
+
+        this.logger.log({
+          message: `Serving at ${url}`,
+          color: COLOR.BRIGHT_GREEN
+        })();
+
+        resolve(url);
+      }, config.wait);
+    });
+  }
+
+  async stopServer() {
+    if (this.server) {
+      this.server.stop();
+      this.server = null;
+    }
+  }
+
+  /* eslint-disable no-process-exit */
+  async exit(statusCode) {
+    try {
+      await this.stopBrowser();
+      await this.stopServer();
+      process.exit(statusCode);
+    } catch (error) {
+      // @ts-ignore
+      this.logger.error(error.message || error);
+      process.exit(1);
+    }
+  }
+};
+
+function normalizeServerConfig(config, logger) {
+  const result = Object.assign({}, DEFAULT_SERVER_CONFIG);
+
+  // Handle legacy configs
+  if (config.process) {
+    result.command = config.process;
+    logger.deprecated('process', 'command');
+  }
+  if (config.parameters) {
+    result.arguments = config.parameters;
+    logger.deprecated('parameters', 'arguments');
+  }
+
+  Object.assign(result, config, {
+    options: Object.assign({}, result.options, config.options)
+  });
+
+  return result;
+}
