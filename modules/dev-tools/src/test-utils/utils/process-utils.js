@@ -1,4 +1,4 @@
-const ChildProcess = require('child_process').ldefa;
+const ChildProcess = require('child_process');
 
 // Get an available port
 // Works on Unix systems

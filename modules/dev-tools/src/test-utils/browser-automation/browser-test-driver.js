@@ -200,11 +200,9 @@ module.exports = class BrowserTestDriver extends BrowserDriver {
         .screenshot(screenshotOptions)
         .then((image) => diffImages(image, opts.goldenImage, opts))
         .then((result) => {
-          // @ts-expect-error
           if (!result.success && opts.saveOnFail && result.source1) {
             let filename = opts.saveAs || '[name]-failed.png';
             filename = filename.replace('[name]', opts.goldenImage.replace(/\.\w+$/, ''));
-            // @ts-expect-error
             this._saveScreenshot(filename, result.source1);
           }
           return {

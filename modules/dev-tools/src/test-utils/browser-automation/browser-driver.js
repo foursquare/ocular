@@ -97,14 +97,23 @@ module.exports = class BrowserDriver {
       args.push('--port', port);
     }
 
-    const server = await esbuild.serve({port}, {entryPoints: [], bundle: true});
+    if (config.command === 'esbuild' && config.entry) {
+      const server = await esbuild.serve({port}, {entryPoints: [config.entry], bundle: true});
+      server.wait.then(() => {
+        this.server = null;
+      });
+      this.server = server;
+    } else {
+      // const server = ChildProcess.spawn(config.command, args, config.options);
+      // server.stderr.on('data', onError);
+      // server.on('error', onError);
+      // server.on('close', () => () => {
+      //   this.server = null;
+      // });
+    }
 
-    this.server = server;
+    // this.server = server;
     this.port = port;
-
-    server.wait.then(() => {
-      this.server = null;
-    });
 
     return await new Promise((resolve, reject) => {
       setTimeout(() => {

@@ -7,9 +7,7 @@ const {resolve} = require('path');
 const moduleAlias = require('module-alias');
 
 const {getOcularConfig} = require('../src/helpers/get-ocular-config');
-const {
-  default: BrowserTestDriver
-} = require('../src/test-utils/browser-automation/browser-test-driver');
+const BrowserTestDriver = require('../src/test-utils/browser-automation/browser-test-driver');
 
 const ocularConfig = getOcularConfig();
 
@@ -44,11 +42,8 @@ switch (mode) {
   case 'browser-headless':
     runBrowserTest({
       server: {
-        command: webpackCommand,
-        arguments:
-          webpackVersion === 5
-            ? ['serve', '--config', webpackConfigPath, '--env', 'mode=test']
-            : ['--config', webpackConfigPath, '--env.mode=test']
+        command: 'esbuild',
+        entry: resolveEntry('test-browser')
       },
       headless: mode === 'browser-headless'
     });
