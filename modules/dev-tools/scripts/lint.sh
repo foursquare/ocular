@@ -57,13 +57,13 @@ case $MODE in
       done
 
       (set -x; npx prettier-check $FILES_LIST)
-      (set -x; npx eslint $FILES_LIST)
+      (set -x; npx eslint -c .eslintrc.ocular.js $FILES_LIST)
     fi
     ;;
 
   "fix")
     print_yellow "Running eslint in $DIRECTORIES..."
-    (set -x; npx eslint --fix "$DIRECTORIES/**/*.$EXTENSIONS")
+    (set -x; npx eslint -c .eslintrc.ocular.js --fix "$DIRECTORIES/**/*.$EXTENSIONS")
 
     print_yellow "Running prettier in $DIRECTORIES..."
     (set -x; npx prettier --loglevel warn --write "$DIR_PATTERN" "$ROOT_PATTERN")
@@ -71,7 +71,7 @@ case $MODE in
 
   *)
     print_yellow "Running eslint in $DIRECTORIES..."
-    (set -x; npx eslint "$DIRECTORIES/**/*.$EXTENSIONS")
+    (set -x; npx eslint -c .eslintrc.ocular.js "$DIRECTORIES/**/*.$EXTENSIONS")
 
     print_yellow "Checking prettier code style in $DIRECTORIES..."
     (set -x; npx prettier-check  "$DIR_PATTERN" "$ROOT_PATTERN" ||
