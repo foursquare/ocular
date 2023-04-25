@@ -68,7 +68,7 @@ const ENV_CONFIG = {
         }
       ]
     ],
-    plugins: [...COMMON_PLUGINS]
+    plugins: [...COMMON_PLUGINS, 'istanbul']
   }
 };
 
