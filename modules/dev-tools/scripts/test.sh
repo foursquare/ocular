@@ -55,7 +55,7 @@ case $MODE in
     ;;
 
   "cover")
-    (set -x; NODE_ENV=test BABEL_ENV=test npx nyc node --max-old-space-size=4092 $MODULE_DIR/node/test.js cover)
+    (set -x; NODE_ENV=test BABEL_ENV=test npx nyc node $MODULE_DIR/node/test.js cover)
     (set -x; npx nyc report --reporter=lcov)
     ;;
 
